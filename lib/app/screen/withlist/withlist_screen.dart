@@ -7,13 +7,17 @@ import 'package:flutter_store/app/config/utils/icon/square_icons.dart';
 import 'package:flutter_store/app/config/utils/image_container/rounded_image_container.dart';
 import 'package:flutter_store/app/config/utils/sizes.dart';
 import 'package:flutter_store/app/config/utils/widget_text/product_title_text.dart';
+import 'package:flutter_store/app/data/api.dart';
 import 'package:flutter_store/app/data/sqlite.dart';
+import 'package:flutter_store/app/model/cart.dart';
+import 'package:flutter_store/app/model/product.dart';
 import 'package:flutter_store/app/model/withlist.dart';
 import 'package:flutter_store/app/screen/cart/cart.dart';
 import 'package:flutter_store/app/screen/product/widget/cart_icon.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WithlistScreen extends StatefulWidget {
   const WithlistScreen({super.key, this.data});
@@ -29,6 +33,25 @@ class _WithlistState extends State<WithlistScreen> {
 
   Future<List<Withlist>> _getProducts() async {
     return await _databaseHelper.withlistproducts();
+  }
+
+  Future<List<ProductModel>> _getProductsCart() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return await APIRepository().getProduct(
+      prefs.getString('accountID').toString(),
+      prefs.getString('token').toString()
+    );
+  }
+
+  Future<void> _onSave(ProductModel pro) async {
+    _databaseHelper.insertProduct(Cart(
+        productID: pro.id,
+        name: pro.name,
+        des: pro.description,
+        price: pro.price,
+        img: pro.imageUrl,
+        count: 1));
+    setState(() {});
   }
 
   @override
@@ -133,20 +156,30 @@ class _WithlistState extends State<WithlistScreen> {
                 ),
 
                 ///Add to Cart Button
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(TSize.cardRadiusMd),
-                      bottomRight: Radius.circular(TSize.productImageRadius),
-                    ),
-                  ),
-                  child: SizedBox(
-                    width: TSize.iconLg * 1.2,
-                    height: TSize.iconLg * 1.2,
-                    child: Center(child: IconButton(onPressed: () {}, icon: const Icon(Iconsax.add, color: Colors.white,))),
-                  ),
-                )
+                FutureBuilder<List<ProductModel>>(
+                  future: _getProductsCart(), 
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                    return Container(
+                      decoration: const BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(TSize.cardRadiusMd),
+                          bottomRight: Radius.circular(TSize.productImageRadius),
+                        ),
+                      ),
+                      child: SizedBox(
+                        width: TSize.iconLg * 1.2,
+                        height: TSize.iconLg * 1.2,
+                        child: Center(child: IconButton(onPressed: () {setState(() {DatabaseHelper().insertProductCart(pro);});} , icon: const Icon(Iconsax.add, color: Colors.white,))),
+                      ),
+                    );
+                  }
+                ),
               ],
             ),
           ],

@@ -57,6 +57,23 @@ class DatabaseHelper {
     }
   }
 
+  Future<void> insertProductCart(Withlist productModel) async {
+    final db = await _databaseService.database;
+    var res = await db.rawQuery('SELECT * FROM Cart WHERE productID = "${productModel.productID}"');
+    if(res.isEmpty)
+    {
+      await db.insert(
+        'Cart',
+        productModel.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    else
+    {
+      _databaseService.add(productModel as Cart);
+    }
+  }
+
   Future<void> insertProductWithlist(Withlist withlistModel) async {
     final db = await _databaseService.database;
     var res = await db.rawQuery('SELECT * FROM Withlist WHERE productID = "${withlistModel.productID}"');
